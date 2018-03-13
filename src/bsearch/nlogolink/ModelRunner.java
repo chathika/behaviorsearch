@@ -12,6 +12,9 @@ import org.nlogo.core.CompilerException;
 import org.nlogo.api.LogoException;
 import org.nlogo.api.SimpleJobOwner;
 import org.nlogo.nvm.Procedure;
+
+import bsearch.external.PythonMetric;
+
 import org.nlogo.api.MersenneTwisterFast;
 import org.nlogo.headless.HeadlessWorkspace;
 
@@ -222,19 +225,24 @@ public strictfp class ModelRunner {
 	public ModelRunResult doFullRun(RunSetup runSetup) throws ModelRunnerException
 	{
 		try {
+			double id = new Long(Thread.currentThread().getId()).doubleValue();
+			runSetup.parameterSettings.put("fileid", id);
 			ModelRunResult results = new ModelRunResult(runSetup.seed);
 			setup(runSetup.seed, runSetup.parameterSettings);
-			
 			int steps;
 			for (steps = 0; steps < maxModelSteps && !runIsDone; steps++)
 			{
 				if (recordEveryTick )
 				{
-					conditionallyRecordResults(results);
+					//conditionallyRecordResults(results);
 				}
 				go();
 			}
-			conditionallyRecordResults(results);
+			//conditionallyRecordResults(results);
+			
+			PythonMetric pyMetric = new PythonMetric();
+			double metric = pyMetric.runMetric(id);
+			results.addResult("gini", metric);
 			if (results.isEmpty())
 			{
 				throw new NetLogoLinkException("No values were measured/collected during this model run! (Model was run for " + steps + " steps.)");
